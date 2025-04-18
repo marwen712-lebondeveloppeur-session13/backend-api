@@ -2,7 +2,7 @@
 name: backend-api-stack
 
 services:
-  # Backend API service configuration
+  # Backend API service configuration.
   backend-api:
     build: .  # Build the image from the current directory
     container_name: backend-api  # Name of the container
