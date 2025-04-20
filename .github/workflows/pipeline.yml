@@ -3,6 +3,7 @@ name: Pipeline CI/CD Backend-api
 env:
   BUILD_NUMBER: ${{ github.run_number }}
   IMAGE_NAME: backend-api
+  BACKEND_URL: "https://api.lebondeveloppeur.net"  # URL de ton backend sans /health
 
 on:
   push:
@@ -92,6 +93,16 @@ jobs:
             sudo docker compose pull
             sudo docker compose up -d --force-recreate --remove-orphans
             sudo docker image prune -af
+
+      - name: Health Check - Verify Backend Availability
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" ${{ env.BACKEND_URL }}/health)
+          if [ "$response" -ne 200 ]; then
+            echo "Health check failed with response code $response"
+            exit 1
+          else
+            echo "Health check passed successfully!"
+          fi
 
       - name: Notify Slack on Success
         if: success()

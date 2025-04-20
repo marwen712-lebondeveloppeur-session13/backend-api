@@ -37,25 +37,31 @@ app.get("/", (req, res) => {
   res.send("Server is running!");
 });
 
-// Health check endpoint
 app.get("/health", async (req, res) => {
+  const start = Date.now();
   try {
-    // Perform a simple database operation to check database health.
+    // Check database connection
     await mongoose.connection.db.admin().ping();
+
+    const latency = Date.now() - start;
     res.status(200).json({
       status: "UP",
-      message: "App is running smoothly. - le bon developpeur ",
+      message: "App is running smoothly. - le bon developpeur 🚀",
       database: "Connected",
+      latency: `${latency}ms`,
+      timestamp: new Date().toISOString()
     });
   } catch (err) {
+    console.error("Health check error:", err);
     res.status(500).json({
       status: "DOWN",
       message: "App or Database is experiencing issues.",
       database: "Disconnected",
+      error: err.message,
+      timestamp: new Date().toISOString()
     });
   }
 });
-
 
 app.use("/api/products", productRoutes);
 
