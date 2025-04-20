@@ -3,7 +3,7 @@ name: Pipeline CI/CD Backend-api
 env:
   BUILD_NUMBER: ${{ github.run_number }}
   IMAGE_NAME: backend-api
-  BACKEND_URL: "https://api.lebondeveloppeur.net"  
+  BACKEND_URL: "https://api.lebondeveloppeur.net"
 
 on:
   push:
@@ -11,6 +11,8 @@ on:
       - main
 
 jobs:
+
+  # Unit Tests
   test-job:
     runs-on: ubuntu-latest
     steps:
@@ -28,6 +30,7 @@ jobs:
       - name: Run unit tests
         run: npm test
 
+  # SonarQube Scan
   sonarqube-scan-job:
     runs-on: ubuntu-latest
     needs: test-job
@@ -49,6 +52,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
+  # Security & Code Quality (DevSecOps)
   security-scan:
     runs-on: ubuntu-latest
     needs: sonarqube-scan-job
@@ -59,9 +63,13 @@ jobs:
       - name: Install Dependency Scanning Tool
         run: npm install -g snyk
 
+      - name: Snyk Authentication
+        run: snyk auth ${{ secrets.SNYK_TOKEN }}
+
       - name: Run Snyk Vulnerability Scan
         run: snyk test
 
+  # Build and Push Docker Image
   build-and-push-job:
     runs-on: ubuntu-latest
     needs: security-scan
@@ -90,6 +98,7 @@ jobs:
       - name: Push Docker image with latest version
         run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
 
+  # Deploy to VPS
   deploy-job:
     runs-on: ubuntu-latest
     needs: build-and-push-job
@@ -107,6 +116,7 @@ jobs:
             sudo docker compose up -d --force-recreate --remove-orphans
             sudo docker image prune -af
 
+  # Health Check
   health-check-job:
     runs-on: ubuntu-latest
     needs: deploy-job
