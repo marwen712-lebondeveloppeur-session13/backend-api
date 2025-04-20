@@ -94,9 +94,13 @@ jobs:
             sudo docker compose up -d --force-recreate --remove-orphans
             sudo docker image prune -af
 
+      - name: Wait for 10 seconds before health check
+        run: |
+          echo "Waiting for 10 seconds before health check..."
+          sleep 10
+
       - name: Health Check - Verify Backend Availability
         run: |
-          echo "Starting health check..."
           response=$(curl -s -o /dev/null -w "%{http_code}" ${{ env.BACKEND_URL }}/health)
           echo "Received response code: $response"
           if [ "$response" -ne 200 ]; then
