@@ -3,7 +3,7 @@ name: Pipeline CI/CD Backend-api
 env:
   BUILD_NUMBER: ${{ github.run_number }}
   IMAGE_NAME: backend-api
-  BACKEND_URL: "https://api.lebondeveloppeur.net"  # URL de ton backend sans /health
+  BACKEND_URL: "https://api.lebondeveloppeur.net"  
 
 on:
   push:
@@ -96,7 +96,9 @@ jobs:
 
       - name: Health Check - Verify Backend Availability
         run: |
+          echo "Starting health check..."
           response=$(curl -s -o /dev/null -w "%{http_code}" ${{ env.BACKEND_URL }}/health)
+          echo "Received response code: $response"
           if [ "$response" -ne 200 ]; then
             echo "Health check failed with response code $response"
             exit 1
