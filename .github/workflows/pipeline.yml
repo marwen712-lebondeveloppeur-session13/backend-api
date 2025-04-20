@@ -72,9 +72,24 @@ jobs:
             sudo docker compose up -d --force-recreate --remove-orphans
             sudo docker image prune -af
 
-      - name: Notify on Slack
+      - name: Notify Slack on Success
+        if: success()
         uses: slackapi/slack-github-action@v1.23.0
-        with: 
-          payload: '{"text":"Pipeline CI/CD Backend-api : 🚀 Déploiement terminé avec succès !"}' 
+        with:
+          payload: |
+            {
+              "text": "✅ *Pipeline CI/CD Backend-api terminé avec succès !*\n🔁 Ref: `${{ github.ref_name }}`\n🏗 Build: `${{ env.BUILD_NUMBER }}`\n🔗 [Voir sur GitHub](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+
+      - name: Notify Slack on Failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1.23.0
+        with:
+          payload: |
+            {
+              "text": "❌ *Échec du pipeline CI/CD Backend-api* ❗️\n🔁 Ref: `${{ github.ref_name }}`\n🔗 [Voir les logs du run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+            }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
