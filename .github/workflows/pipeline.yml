@@ -12,16 +12,15 @@ on:
     branches:
       - main
 
-# Environment variables to be used in the pipeline
+# ✅ Environment variables to be used in the pipeline
 env:
   BUILD_NUMBER: ${{ github.run_number }}  # Unique build number for the pipeline run
   IMAGE_NAME: backend-api  # Name of the Docker image
   BACKEND_URL: "https://api.lebondeveloppeur.net"  # URL for the backend to check its health
 
-
 jobs:
 
-  # Unit Tests Job
+  # ✅ Unit Tests Job
   test-job:
     runs-on: ubuntu-latest
     steps:
@@ -39,20 +38,36 @@ jobs:
       - name: Run unit tests
         run: npm test
 
-  # Secret Scanning Job using Gitleaks
+  # ✅ Secret Scanning Job using Gitleaks
   secret-scan-job:
     runs-on: ubuntu-latest
     needs: test-job  # Run after unit tests
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v2
+          uses: actions/checkout@v4
 
-      - name: Run Gitleaks Scan
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+        - name: Set up Gitleaks
+          run: |
+            curl -sSL https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks-linux-amd64 -o gitleaks
+            chmod +x gitleaks
+            sudo mv gitleaks /usr/local/bin/
 
-  # Static Code Analysis Job (SonarQube)
+        - name: Run Gitleaks Scan (Generate SARIF Report)
+          run: |
+            gitleaks detect \
+              --source . \
+              --report-format sarif \
+              --report-path gitleaks-report.sarif \
+              --verbose
+          env:
+            GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+
+        - name: Upload Gitleaks Report to GitHub Security Tab
+          uses: github/codeql-action/upload-sarif@v3
+          with:
+            sarif_file: gitleaks-report.sarif
+
+  # ✅ Static Code Analysis Job (SonarQube)
   sonarqube-scan-job:
     runs-on: ubuntu-latest
     needs: secret-scan-job
@@ -74,7 +89,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
-  # Vulnerability Scanning Job (Snyk)
+  # ✅ Vulnerability Scanning Job (Snyk)
   security-scan:
     runs-on: ubuntu-latest
     needs: sonarqube-scan-job
@@ -91,7 +106,7 @@ jobs:
       - name: Run Snyk Vulnerability Scan
         run: snyk test
 
-  # Docker Image Scanning Job (Trivy)
+  # ✅ Docker Image Scanning Job (Trivy)
   trivy-scan:
     runs-on: ubuntu-latest
     needs: security-scan
@@ -114,7 +129,7 @@ jobs:
           docker build -t ${{ env.IMAGE_NAME }} .
           trivy image ${{ env.IMAGE_NAME }}
 
-  # Build and Push Docker Image Job
+  # ✅ Build and Push Docker Image Job
   build-and-push-job:
     runs-on: ubuntu-latest
     needs: trivy-scan
@@ -143,7 +158,7 @@ jobs:
       - name: Push Docker image with latest version
         run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
 
-  # Deploy to VPS Job
+  # ✅ Deploy to VPS Job
   deploy-job:
     runs-on: ubuntu-latest
     needs: build-and-push-job
@@ -161,7 +176,7 @@ jobs:
             sudo docker compose up -d --force-recreate --remove-orphans
             sudo docker image prune -af
 
-  # Health Check Job
+  # ✅ Health Check Job
   health-check-job:
     runs-on: ubuntu-latest
     needs: deploy-job
