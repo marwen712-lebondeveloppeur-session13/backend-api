@@ -147,13 +147,13 @@ jobs:
               docker network inspect backend-api-net || docker network create backend-api-net
               
               # Pull the latest Docker image
-              docker pull $IMAGE_NAME
+              docker pull ${{ env.IMAGE_NAME }}
               
               # Remove the old container if it exists
-              docker rm -f backend-api
+              docker rm -f ${{ env.IMAGE_NAME }}
               
               # Run the new container with environment variables
-              docker run -d --name backend-api --network backend-api-net -p ${{ env.PORT }}:${{ env.PORT }} -e NODE_ENV=production -e MONGO_URI=${{ secrets.MONGO_URI }} --restart always $IMAGE_NAME
+              docker run -d --name ${{ env.IMAGE_NAME }} --network backend-api-net -p ${{ env.PORT }}:${{ env.PORT }} -e NODE_ENV=production -e MONGO_URI=${{ secrets.MONGO_URI }} --restart always ${{ env.IMAGE_NAME }}
               
               # Clean up unused images
               sudo docker image prune -f
