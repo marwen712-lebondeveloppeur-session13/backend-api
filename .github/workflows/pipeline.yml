@@ -21,7 +21,7 @@ env:
 jobs:
 
   # ✅ Unit Tests Job
-  test-job:
+  unit-test-job:
     runs-on: ubuntu-latest
     steps:
       - name: Clone Source Code
@@ -41,7 +41,7 @@ jobs:
   # ✅ Secret Scanning Job using Gitleaks
   secret-scan-job:
     runs-on: ubuntu-latest
-    needs: test-job  # Run after unit tests
+    needs: unit-test-job  # Run after unit tests
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
@@ -52,7 +52,7 @@ jobs:
           GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
 
   # ✅ Static Code Analysis Job (SonarQube)
-  sonarqube-scan-job:
+  sonarqube-code-quality-scan-job:
     runs-on: ubuntu-latest
     needs: secret-scan-job
     steps:
@@ -74,9 +74,9 @@ jobs:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
   # ✅ Vulnerability Scanning Job (Snyk)
-  security-scan:
+  snyk-code-security-scan-job:
     runs-on: ubuntu-latest
-    needs: sonarqube-scan-job
+    needs: sonarqube-code-quality-scan-job
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
@@ -91,9 +91,9 @@ jobs:
         run: snyk test
 
   # ✅ Docker Image Scanning Job (Trivy)
-  trivy-scan:
+  trivy-image-security-scan-job:
     runs-on: ubuntu-latest
-    needs: security-scan
+    needs: snyk-code-security-scan-job
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
@@ -116,7 +116,7 @@ jobs:
   # ✅ Build and Push Docker Image Job
   build-and-push-job:
     runs-on: ubuntu-latest
-    needs: trivy-scan
+    needs: trivy-image-security-scan-job
     steps:
       - name: Clone Source Code
         uses: actions/checkout@v4
