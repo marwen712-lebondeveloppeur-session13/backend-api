@@ -146,6 +146,13 @@ jobs:
               # Create Docker network if it doesn't exist
               docker network inspect backend-api-net || docker network create backend-api-net
               
+              # Backup current image if running
+              if docker ps -a --format '{{.Names}}' | grep -q 'backend-api'; then
+                current_image=$(docker inspect backend-api --format='{{.Config.Image}}')
+                echo "Tagging current image ($current_image) as backup"
+                docker tag $current_image backend-api:backup
+              fi
+
               # Pull the latest Docker image
               docker pull ${{ env.IMAGE_NAME }}
               
@@ -198,3 +205,25 @@ jobs:
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+
+  rollback-job:
+    runs-on: ubuntu-latest
+    needs: health-check-job
+    if: failure()
+    steps:
+      - name: Rollback to Backup Image on VPS
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          script: |
+            echo "⚠️ Health check failed. Starting rollback..."
+
+            # Remove broken container
+            docker rm -f backend-api || true
+
+            # Start container using backup image
+            docker run -d --name backend-api --network backend-api-net -p ${{ env.PORT }}:${{ env.PORT }} -e NODE_ENV=production -e MONGO_URI=${{ secrets.MONGO_URI }} --restart always backend-api:backup
+
+            docker ps
