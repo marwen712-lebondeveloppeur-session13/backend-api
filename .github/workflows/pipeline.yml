@@ -157,10 +157,10 @@ jobs:
               docker pull ${{ env.IMAGE_NAME }}
               
               # Remove the old container if it exists
-              docker ps -q --filter name=backend-api? | grep -q . && docker rm -f backend-api || echo "No existing container to remove"
+              docker ps -q --filter name=backend-api | grep -q . && docker rm -f backend-api || echo "No existing container to remove"
 
               # Run the new container with environment variables
-              docker run -d --name backend-api --network backend-api-net -p ${{ env.PORT }}:${{ env.PORT }} -e NODE_ENV=production -e MONGO_URI=${{ secrets.MONGO_URI }} --restart always ${{ env.IMAGE_NAME }}
+              docker run -d --name backend-api?/ --network backend-api-net -p ${{ env.PORT }}:${{ env.PORT }} -e NODE_ENV=production -e MONGO_URI=${{ secrets.MONGO_URI }} --restart always ${{ env.IMAGE_NAME }}
               
               # Shows running containers
               docker ps
