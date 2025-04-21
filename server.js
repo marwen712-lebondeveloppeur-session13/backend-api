@@ -22,8 +22,8 @@ async function connectDB() {
   }
 
   try {
-    const mongo_uri = "mongodb+srv://hello:z6zh1uoYDogObtYM@cluster0.mq57s.mongodb.net/book-store?authSource=admin"
-   console.log("mongo_uri=",mongo_uri)
+    //const mongo_uri = "mongodb+srv://hello:z6zh1uoYDogObtYM@cluster0.mq57s.mongodb.net/book-store?authSource=admin"
+  // console.log("mongo_uri=",mongo_uri)
     await mongoose.connect(process.env.MONGO_URI);
     console.log("MongoDB connected successfully!");
   } catch (error) {

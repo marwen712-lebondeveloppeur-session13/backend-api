@@ -129,11 +129,35 @@ jobs:
       - name: Push Docker image 
         run: docker push ${{ env.IMAGE_NAME }}
 
+  # ✅ Provision VPS
+  provision-vps-job:
+    runs-on: ubuntu-latest
+    needs: build-and-push-job
+    steps:
+      - name: Checkout main repository
+        uses: actions/checkout@v4
+
+      - name: Checkout the playbook and inventory from the private repo
+        uses: actions/checkout@v4
+        with:
+          repository: DevOps-Lebondeveloppeur/ansible-demo  # Replace with the repository name
+          token: ${{ secrets.GH_TOKEN }}  # Use the secret you just created
+          path: ansible-demo  # Directory where the private repository will be checked out
+
+      - name: Provision VPS using Ansible with inline inventory
+        uses: dawidd6/action-ansible-playbook@v2
+        with:
+          playbook: ./ansible-demo/playbook.yml  # Path to the playbook in the private repo
+          args: |
+            -i "${{ secrets.VPS_HOST }} ansible_user=${{ secrets.VPS_USERNAME }} ansible_ssh_pass=${{ secrets.VPS_PASSWORD }}"
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: 'false'
+ 
 
   # ✅ Deploy to VPS
   deploy-job:
     runs-on: ubuntu-latest
-    needs: build-and-push-job  # Deploy only after image is pushed
+    needs: provision-vps-job  
     steps:
       - name: Connect to the VPS using SSH
         uses: appleboy/ssh-action@master
@@ -160,7 +184,7 @@ jobs:
               docker ps -q --filter name=backend-api | grep -q . && docker rm -f backend-api || echo "No existing container to remove"
 
               # Run the new container with environment variables
-              docker run -d --name backend-api?/ --network backend-api-net -p ${{ env.PORT }}:${{ env.PORT }} -e NODE_ENV=production -e MONGO_URI=${{ secrets.MONGO_URI }} --restart always ${{ env.IMAGE_NAME }}
+              docker run -d --name backend-api --network backend-api-net -p ${{ env.PORT }}:${{ env.PORT }} -e NODE_ENV=production -e MONGO_URI=${{ secrets.MONGO_URI }} --restart always ${{ env.IMAGE_NAME }}
               
               # Shows running containers
               docker ps
