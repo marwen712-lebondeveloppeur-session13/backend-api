@@ -154,10 +154,11 @@ jobs:
         uses: dawidd6/action-ansible-playbook@v2
         with:
           playbook: ansible-demo/playbook.yml
-          args: >
-              -i "${{ secrets.VPS_HOST }},"  # Trailing comma is mandatory!
-              --extra-vars "ansible_user=${{ secrets.VPS_USERNAME }} ansible_password=${{ secrets.VPS_PASSWORD }} ansible_become=yes"
-
+          inventory: "${{ secrets.VPS_HOST }},"
+          options: >
+            --extra-vars "ansible_user=${{ secrets.VPS_USERNAME }} ansible_password=${{ secrets.VPS_PASSWORD }} ansible_become=yes"
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: 'false'
  
 
   # ✅ Deploy to VPS
