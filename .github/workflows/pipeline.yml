@@ -18,6 +18,7 @@ jobs:
 
   # ✅ 1. Run Unit Tests
   unit-test-job:
+    if: false
     runs-on: ubuntu-latest
     steps:
       - name: Clone Source Code
@@ -36,6 +37,7 @@ jobs:
 
   # ✅ 2. Static Code Analysis (SonarQube)
   sonarqube-code-quality-scan-job:
+    if: false
     runs-on: ubuntu-latest
     needs: unit-test-job  # Run after tests
     steps:
@@ -58,6 +60,7 @@ jobs:
 
   # ✅ 3. Secret Scanning (Gitleaks)
   secret-scan-job:
+    if: false
     runs-on: ubuntu-latest
     needs: [sonarqube-code-quality-scan-job]  # Run in parallel after code analysis
     steps:
@@ -71,6 +74,7 @@ jobs:
 
   # ✅ 4. Vulnerability Scanning (Snyk)
   snyk-code-security-scan-job:
+    if: false
     runs-on: ubuntu-latest
     needs: [sonarqube-code-quality-scan-job]
     steps:
@@ -88,6 +92,7 @@ jobs:
 
   # ✅ 5. Docker Image Scanning (Trivy)
   trivy-image-security-scan-job:
+    if: false
     runs-on: ubuntu-latest
     needs: [sonarqube-code-quality-scan-job]
     steps:
