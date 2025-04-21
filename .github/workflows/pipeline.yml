@@ -52,7 +52,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
-  # Security & Code Quality (DevSecOps)
+  # Security & Code Quality (DevSecOps).
   security-scan:
     runs-on: ubuntu-latest
     needs: sonarqube-scan-job
