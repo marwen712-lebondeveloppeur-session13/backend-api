@@ -44,29 +44,12 @@ jobs:
     needs: test-job  # Run after unit tests
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v2
 
-      - name: Set up Gitleaks
-        run: |
-            curl -sSL https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks_$(uname -s)_$(uname -m) -o gitleaks
-            chmod +x gitleaks
-            sudo mv gitleaks /usr/local/bin/
-            gitleaks version
-
-      - name: Run Gitleaks Scan (Generate SARIF Report)
-        run: |
-          gitleaks detect \
-            --source . \
-            --report-format sarif \
-            --report-path gitleaks-report.sarif \
-            --verbose
+      - name: Run Gitleaks Scan
+        uses: gitleaks/gitleaks-action@v2
         env:
           GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
-
-      - name: Upload Gitleaks Report to GitHub Security Tab
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: gitleaks-report.sarif
 
   # ✅ Static Code Analysis Job (SonarQube)
   sonarqube-scan-job:
