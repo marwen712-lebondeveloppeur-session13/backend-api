@@ -130,7 +130,7 @@ jobs:
 
       - name: Push Docker image 
         run: docker push ${{ env.IMAGE_NAME }}
-        
+
   # ✅ Provision VPS
   provision-vps-job:
     runs-on: ubuntu-latest
@@ -154,10 +154,9 @@ jobs:
         uses: dawidd6/action-ansible-playbook@v2
         with:
           playbook: ansible-demo/playbook.yml
-          args: |
-            -i "${{ secrets.VPS_HOST }},"  # Comma is important for single-host inventory
-            --user "${{ secrets.VPS_USERNAME }}"
-            --extra-vars "ansible_ssh_pass=${{ secrets.VPS_PASSWORD }} ansible_connection=ssh ansible_port=22"
+          args: >
+              -i "${{ secrets.VPS_HOST }},"  # Trailing comma is mandatory!
+              --extra-vars "ansible_user=${{ secrets.VPS_USERNAME }} ansible_ssh_pass=${{ secrets.VPS_PASSWORD }} ansible_port=22 ansible_connection=ssh"
         env:
           ANSIBLE_HOST_KEY_CHECKING: 'false'
 
