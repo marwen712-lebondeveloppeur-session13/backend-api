@@ -140,9 +140,9 @@ jobs:
       - name: Checkout the playbook and inventory from the private repo
         uses: actions/checkout@v4
         with:
-          repository: DevOps-Lebondeveloppeur/ansible-demo
+          repository: DevOps-Lebondeveloppeur/devops-scripts
           token: ${{ secrets.GH_TOKEN }}
-          path: ansible-demo
+          path: devops-scripts/provision
 
       - name: Install SSH Client (optional but helps with debugging)
         run: sudo apt-get update && sudo apt-get install -y openssh-client
@@ -153,7 +153,7 @@ jobs:
       - name: Provision VPS using Ansible with inline inventory
         uses: dawidd6/action-ansible-playbook@v2
         with:
-          playbook: ansible-demo/playbook.yml
+          playbook: devops-scripts/provision/playbook.yml
           inventory: "${{ secrets.VPS_HOST }},"
           options: >
             --extra-vars "ansible_user=${{ secrets.VPS_USERNAME }} ansible_password=${{ secrets.VPS_PASSWORD }} ansible_become=yes"
