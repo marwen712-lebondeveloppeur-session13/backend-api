@@ -137,6 +137,12 @@ jobs:
     needs: build-and-push-job
 
     steps:
+
+      - name: Test access to private repository using GH_TOKEN
+        run: |
+          echo "Testing access to DevOps-Lebondeveloppeur/devops-scripts..."
+          curl -i -H "Authorization: token ${{ secrets.GH_TOKEN }}" https://api.github.com/repos/DevOps-Lebondeveloppeur/devops-scripts
+
       - name: Checkout the playbook and inventory from the private repo
         uses: actions/checkout@v4
         with:
