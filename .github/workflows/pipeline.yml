@@ -161,7 +161,7 @@ jobs:
         uses: dawidd6/action-ansible-playbook@v2
         with:
           playbook: devops-scripts/provision/playbook.yml
-          inventory: "${{ secrets.VPS_HOST }},"
+          inventory: "${{ secrets.VPS_HOST }}"
           options: >
             --extra-vars "ansible_user=${{ secrets.VPS_USERNAME }} ansible_password=${{ secrets.VPS_PASSWORD }} ansible_become=yes"
         env:
