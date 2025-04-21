@@ -155,8 +155,9 @@ jobs:
               # Run the new container with environment variables
               docker run -d --name ${{ env.IMAGE_NAME }} --network backend-api-net -p ${{ env.PORT }}:${{ env.PORT }} -e NODE_ENV=production -e MONGO_URI=${{ secrets.MONGO_URI }} --restart always ${{ env.IMAGE_NAME }}
               
+              docker ps
               # Clean up unused images
-              sudo docker image prune -f
+              #sudo docker image prune -f
 
   # ✅ 8. Health Check & Slack Notification
   health-check-job:
