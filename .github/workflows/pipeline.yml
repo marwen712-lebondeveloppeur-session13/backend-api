@@ -16,7 +16,7 @@ env:
 
 jobs:
 
-  # ✅ 1. Run Unit Tests
+  # ✅ Run Unit Tests
   unit-test-job:
     runs-on: ubuntu-latest
     steps:
@@ -34,7 +34,7 @@ jobs:
       - name: Run unit tests
         run: npm test
 
-  # ✅ 2. Static Code Analysis (SonarQube)
+  # ✅ Static Code Analysis (SonarQube)
   sonarqube-code-quality-scan-job:
     runs-on: ubuntu-latest
     needs: unit-test-job  # Run after tests
@@ -56,7 +56,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
-  # ✅ 3. Secret Scanning (Gitleaks)
+  # ✅ Secret Scanning (Gitleaks)
   secret-scan-job:
     runs-on: ubuntu-latest
     needs: [sonarqube-code-quality-scan-job]  # Run in parallel after code analysis
@@ -69,7 +69,7 @@ jobs:
         env:
           GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
 
-  # ✅ 4. Vulnerability Scanning (Snyk)
+  # ✅ Vulnerability Scanning (Snyk)
   snyk-code-security-scan-job:
     runs-on: ubuntu-latest
     needs: [sonarqube-code-quality-scan-job]
@@ -86,7 +86,7 @@ jobs:
       - name: Run Snyk Vulnerability Scan
         run: snyk test
 
-  # ✅ 5. Docker Image Scanning (Trivy)
+  # ✅ Docker Image Scanning (Trivy)
   trivy-image-security-scan-job:
     runs-on: ubuntu-latest
     needs: [sonarqube-code-quality-scan-job]
@@ -109,7 +109,7 @@ jobs:
           docker build -t ${{ env.IMAGE_NAME }} .
           trivy image ${{ env.IMAGE_NAME }}
 
-  # ✅ 6. Build and Push Docker Image
+  # ✅ Build and Push Docker Image
   build-and-push-job:
     runs-on: ubuntu-latest
     needs: [secret-scan-job, snyk-code-security-scan-job, trivy-image-security-scan-job]  # Wait for all security scans
@@ -130,7 +130,7 @@ jobs:
         run: docker push ${{ env.IMAGE_NAME }}
 
 
-  # ✅ 7. Deploy to VPS
+  # ✅ Deploy to VPS
   deploy-job:
     runs-on: ubuntu-latest
     needs: build-and-push-job  # Deploy only after image is pushed
@@ -157,7 +157,7 @@ jobs:
               docker pull ${{ env.IMAGE_NAME }}
               
               # Remove the old container if it exists
-              docker ps -q --filter name=backend-api | grep -q . && docker rm -f backend-api || echo "No existing container to remove"
+              docker ps -q --filter name=backend-api? | grep -q . && docker rm -f backend-api || echo "No existing container to remove"
 
               # Run the new container with environment variables
               docker run -d --name backend-api --network backend-api-net -p ${{ env.PORT }}:${{ env.PORT }} -e NODE_ENV=production -e MONGO_URI=${{ secrets.MONGO_URI }} --restart always ${{ env.IMAGE_NAME }}
@@ -206,6 +206,7 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
 
+  # ✅ Rollback when health check fails
   rollback-job:
     runs-on: ubuntu-latest
     needs: health-check-job
