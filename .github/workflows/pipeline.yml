@@ -7,15 +7,15 @@ on:
     branches:
       - main
 
-# ✅ Environment variables to be used in the pipeline
+# ✅ Global Environment Variables
 env:
   BUILD_NUMBER: ${{ github.run_number }}  # Unique build number for the pipeline run
   IMAGE_NAME: backend-api  # Name of the Docker image
-  BACKEND_URL: "https://api.lebondeveloppeur.net"  # URL for the backend to check its health
+  BACKEND_URL: "https://api.lebondeveloppeur.net"  # Health check endpoint of the backend API
 
 jobs:
 
-  # ✅ Unit Tests Job
+  # ✅ 1. Run Unit Tests
   unit-test-job:
     runs-on: ubuntu-latest
     steps:
@@ -33,23 +33,10 @@ jobs:
       - name: Run unit tests
         run: npm test
 
-  # ✅ Secret Scanning Job using Gitleaks
-  secret-scan-job:
-    runs-on: ubuntu-latest
-    needs: unit-test-job  # Run after unit tests
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v2
-
-      - name: Run Gitleaks Scan
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
-
-  # ✅ Static Code Analysis Job (SonarQube)
+  # ✅ 2. Static Code Analysis (SonarQube)
   sonarqube-code-quality-scan-job:
     runs-on: ubuntu-latest
-    needs: secret-scan-job
+    needs: unit-test-job  # Run after tests
     steps:
       - name: Clone Source Code
         uses: actions/checkout@v4
@@ -68,10 +55,23 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
-  # ✅ Vulnerability Scanning Job (Snyk)
+  # ✅ 3. Secret Scanning (Gitleaks)
+  secret-scan-job:
+    runs-on: ubuntu-latest
+    needs: [sonarqube-code-quality-scan-job]  # Run in parallel after code analysis
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Run Gitleaks Scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+
+  # ✅ 4. Vulnerability Scanning (Snyk)
   snyk-code-security-scan-job:
     runs-on: ubuntu-latest
-    needs: sonarqube-code-quality-scan-job
+    needs: [sonarqube-code-quality-scan-job]
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
@@ -85,10 +85,10 @@ jobs:
       - name: Run Snyk Vulnerability Scan
         run: snyk test
 
-  # ✅ Docker Image Scanning Job (Trivy)
+  # ✅ 5. Docker Image Scanning (Trivy)
   trivy-image-security-scan-job:
     runs-on: ubuntu-latest
-    needs: snyk-code-security-scan-job
+    needs: [sonarqube-code-quality-scan-job]
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
@@ -108,10 +108,10 @@ jobs:
           docker build -t ${{ env.IMAGE_NAME }} .
           trivy image ${{ env.IMAGE_NAME }}
 
-  # ✅ Build and Push Docker Image Job
+  # ✅ 6. Build and Push Docker Image
   build-and-push-job:
     runs-on: ubuntu-latest
-    needs: trivy-image-security-scan-job
+    needs: [secret-scan-job, snyk-code-security-scan-job, trivy-image-security-scan-job]  # Wait for all security scans
     steps:
       - name: Clone Source Code
         uses: actions/checkout@v4
@@ -137,10 +137,10 @@ jobs:
       - name: Push Docker image with latest version
         run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
 
-  # ✅ Deploy to VPS Job
+  # ✅ 7. Deploy to VPS
   deploy-job:
     runs-on: ubuntu-latest
-    needs: build-and-push-job
+    needs: build-and-push-job  # Deploy only after image is pushed
     steps:
       - name: Connect to the VPS using SSH
         uses: appleboy/ssh-action@master
@@ -155,10 +155,10 @@ jobs:
             sudo docker compose up -d --force-recreate --remove-orphans
             sudo docker image prune -af
 
-  # ✅ Health Check Job
+  # ✅ 8. Health Check & Slack Notification
   health-check-job:
     runs-on: ubuntu-latest
-    needs: deploy-job
+    needs: deploy-job  # Run health check only after deployment
     steps:
       - name: Health Check - Verify Backend Availability
         run: |
