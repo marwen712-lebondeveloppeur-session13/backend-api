@@ -142,7 +142,8 @@ jobs:
         with:
           repository: DevOps-Lebondeveloppeur/devops-scripts
           token: ${{ secrets.GH_TOKEN }}
-          path: devops-scripts/provision
+          path: devops-scripts
+          ref: main
 
       - name: Install SSH Client (optional but helps with debugging)
         run: sudo apt-get update && sudo apt-get install -y openssh-client
