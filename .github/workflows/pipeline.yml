@@ -12,6 +12,7 @@ env:
   BUILD_NUMBER: ${{ github.run_number }}  # Unique build number for the pipeline run
   IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/backend-api:${{ github.sha }}
   BACKEND_URL: "https://api.lebondeveloppeur.net"  # Health check endpoint of the backend API
+  PORT: 3001  # Define a configurable port
 
 jobs:
 
@@ -61,7 +62,7 @@ jobs:
     needs: [sonarqube-code-quality-scan-job]  # Run in parallel after code analysis
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Run Gitleaks Scan
         uses: gitleaks/gitleaks-action@v2
@@ -74,7 +75,7 @@ jobs:
     needs: [sonarqube-code-quality-scan-job]
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Install Dependency Scanning Tool (Snyk)
         run: npm install -g snyk
@@ -91,7 +92,7 @@ jobs:
     needs: [sonarqube-code-quality-scan-job]
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y curl
@@ -126,7 +127,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Push Docker image 
-        run: docker push {{ env.IMAGE_NAME }}
+        run: docker push ${{ env.IMAGE_NAME }}
 
 
   # ✅ 7. Deploy to VPS
@@ -142,20 +143,20 @@ jobs:
           password: ${{ secrets.VPS_PASSWORD }}
           script: |
 
-            # Create Docker network if it doesn't exist
-            docker network inspect backend-api-net || docker network create backend-api-net
-            
-            # Pull the latest Docker image
-            docker pull $IMAGE_NAME
-            
-            # Remove the old container if it exists
-            docker rm -f backend-api
-            
-            # Run the new container with environment variables
-            docker run -d --name backend-api --network backend-api-net -p 3001:3001 -e NODE_ENV=production -e MONGO_URI=${{ secrets.MONGO_URI }} --restart always $IMAGE_NAME
-            
-            # Clean up unused images
-            sudo docker image prune -f
+              # Create Docker network if it doesn't exist
+              docker network inspect backend-api-net || docker network create backend-api-net
+              
+              # Pull the latest Docker image
+              docker pull $IMAGE_NAME
+              
+              # Remove the old container if it exists
+              docker rm -f backend-api
+              
+              # Run the new container with environment variables
+              docker run -d --name backend-api --network backend-api-net -p ${{ env.PORT }}:${{ env.PORT }} -e NODE_ENV=production -e MONGO_URI=${{ secrets.MONGO_URI }} --restart always $IMAGE_NAME
+              
+              # Clean up unused images
+              sudo docker image prune -f
 
   # ✅ 8. Health Check & Slack Notification
   health-check-job:
