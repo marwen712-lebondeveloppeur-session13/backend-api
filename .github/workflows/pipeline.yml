@@ -227,3 +227,15 @@ jobs:
             docker run -d --name backend-api --network backend-api-net -p ${{ env.PORT }}:${{ env.PORT }} -e NODE_ENV=production -e MONGO_URI=${{ secrets.MONGO_URI }} --restart always backend-api:backup
 
             docker ps
+
+      - name: Notify Slack on Rollback
+        uses: slackapi/slack-github-action@v1.23.0
+        with:
+          payload: |
+            {
+              "text": "🔁 *Rollback effectué suite à un échec du déploiement !*\n🚨 Image de secours utilisée : `backend-api:backup`\n🔗 [Voir les logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+
+      
