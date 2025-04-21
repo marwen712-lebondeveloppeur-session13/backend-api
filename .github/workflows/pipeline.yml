@@ -1,11 +1,6 @@
 # ✅ Name of the Workflow
 name: Pipeline CI/CD Backend-api
 
-# ✅ Required Permissions to upload SARIF results to GitHub Security tab
-permissions:
-  contents: read
-  security-events: write  # Required for uploading SARIF to GitHub code scanning
-
 # ✅ Trigger this workflow on push to main branch
 on:
   push:
