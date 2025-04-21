@@ -16,150 +16,171 @@ jobs:
 
   # Unit Tests Job
   test-job:
-    runs-on: ubuntu-latest  # Runs on the latest Ubuntu VM provided by GitHub Actions
+    runs-on: ubuntu-latest
     steps:
       - name: Clone Source Code
-        uses: actions/checkout@v4  # Checks out the code from the repository
+        uses: actions/checkout@v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@v3  # Sets up Node.js for the build
-        with:
-          node-version: '18'  # Specifies the version of Node.js to be used
-
-      - name: Install dependencies
-        run: npm install  # Installs the project dependencies
-
-      - name: Run unit tests
-        run: npm test  # Runs the unit tests
-
-  # Static Code Analysis Job (SonarQube)
-  sonarqube-scan-job:
-    runs-on: ubuntu-latest  # Runs on the latest Ubuntu VM provided by GitHub Actions
-    needs: test-job  # This job runs after the test-job completes
-    steps:
-      - name: Clone Source Code
-        uses: actions/checkout@v4  # Checks out the code from the repository
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v3  # Sets up Node.js for SonarQube analysis
+        uses: actions/setup-node@v3
         with:
           node-version: '18'
 
       - name: Install dependencies
-        run: npm install  # Installs the project dependencies
+        run: npm install
+
+      - name: Run unit tests
+        run: npm test
+
+  # Secret Scanning Job using Gitleaks
+  secret-scan-job:
+    runs-on: ubuntu-latest
+    needs: test-job  # Run after unit tests
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Gitleaks
+        run: |
+          curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.18.1/gitleaks_8.18.1_linux_x64.tar.gz -o gitleaks.tar.gz
+          tar -xvzf gitleaks.tar.gz
+          sudo mv gitleaks /usr/local/bin/
+
+      - name: Run Gitleaks Scan
+        run: gitleaks detect --source=. --report-format sarif --report-path=gitleaks-report.sarif
+
+      - name: Upload Secret Scan Results
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: gitleaks-report.sarif
+
+  # Static Code Analysis Job (SonarQube)
+  sonarqube-scan-job:
+    runs-on: ubuntu-latest
+    needs: secret-scan-job
+    steps:
+      - name: Clone Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
 
       - name: SonarQube Scan
-        uses: sonarsource/sonarqube-scan-action@master  # Runs SonarQube static analysis
+        uses: sonarsource/sonarqube-scan-action@master
         env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}  # Uses a token stored in GitHub secrets for SonarQube authentication
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}  # SonarQube server URL from secrets
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
   # Vulnerability Scanning Job (Snyk)
   security-scan:
-    runs-on: ubuntu-latest  # Runs on the latest Ubuntu VM provided by GitHub Actions
-    needs: sonarqube-scan-job  # This job runs after the SonarQube scan job completes
+    runs-on: ubuntu-latest
+    needs: sonarqube-scan-job
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v2  # Checks out the code from the repository
+        uses: actions/checkout@v2
 
       - name: Install Dependency Scanning Tool (Snyk)
-        run: npm install -g snyk  # Installs the Snyk vulnerability scanning tool globally
+        run: npm install -g snyk
 
       - name: Snyk Authentication
-        run: snyk auth ${{ secrets.SNYK_TOKEN }}  # Authenticates Snyk using a token from GitHub secrets
+        run: snyk auth ${{ secrets.SNYK_TOKEN }}
 
       - name: Run Snyk Vulnerability Scan
-        run: snyk test  # Runs Snyk to scan the dependencies for vulnerabilities
+        run: snyk test
 
   # Docker Image Scanning Job (Trivy)
   trivy-scan:
-    runs-on: ubuntu-latest  # Runs on the latest Ubuntu VM provided by GitHub Actions
-    needs: security-scan  # This job runs after the security-scan job completes
+    runs-on: ubuntu-latest
+    needs: security-scan
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v2  # Checks out the code from the repository
+        uses: actions/checkout@v2
 
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y curl  # Updates the package list and installs curl
+        run: sudo apt-get update && sudo apt-get install -y curl
 
       - name: Download and install Trivy
         run: |
-          curl -sSL https://github.com/aquasecurity/trivy/releases/download/v0.29.0/trivy_0.29.0_Linux-64bit.tar.gz -o trivy.tar.gz  # Downloads Trivy from GitHub releases
-          tar xzvf trivy.tar.gz  # Extracts the downloaded file
-          sudo mv trivy /usr/local/bin/  # Moves the Trivy binary to a system-wide location
-          trivy --version  # Verifies Trivy installation
+          curl -sSL https://github.com/aquasecurity/trivy/releases/download/v0.29.0/trivy_0.29.0_Linux-64bit.tar.gz -o trivy.tar.gz
+          tar xzvf trivy.tar.gz
+          sudo mv trivy /usr/local/bin/
+          trivy --version
 
       - name: Run Trivy Docker image vulnerability scan
         run: |
-          docker build -t ${{ env.IMAGE_NAME }} .  # Builds the Docker image
-          trivy image ${{ env.IMAGE_NAME }}  # Scans the Docker image for vulnerabilities using Trivy
+          docker build -t ${{ env.IMAGE_NAME }} .
+          trivy image ${{ env.IMAGE_NAME }}
 
   # Build and Push Docker Image Job
   build-and-push-job:
-    runs-on: ubuntu-latest  # Runs on the latest Ubuntu VM provided by GitHub Actions
-    needs: trivy-scan  # This job runs after the Trivy scan job completes
+    runs-on: ubuntu-latest
+    needs: trivy-scan
     steps:
       - name: Clone Source Code
-        uses: actions/checkout@v4  # Checks out the code from the repository
+        uses: actions/checkout@v4
 
       - name: Build Docker image
-        run: docker build -t ${{ env.IMAGE_NAME }} .  # Builds the Docker image
+        run: docker build -t ${{ env.IMAGE_NAME }} .
 
       - name: Login to Docker Hub
-        uses: docker/login-action@v3  # Logs into Docker Hub using GitHub secrets
+        uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}  # Docker Hub username from secrets
-          password: ${{ secrets.DOCKERHUB_TOKEN }}  # Docker Hub token from secrets
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Tag Docker image with specific version
-        run: docker tag ${{ env.IMAGE_NAME }} ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.BUILD_NUMBER }}  # Tags the Docker image with the build number
+        run: docker tag ${{ env.IMAGE_NAME }} ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.BUILD_NUMBER }}
 
       - name: Push Docker image with specific version
-        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.BUILD_NUMBER }}  # Pushes the tagged Docker image to Docker Hub
+        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.BUILD_NUMBER }}
 
       - name: Tag Docker image with latest version
-        run: docker tag ${{ env.IMAGE_NAME }} ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest  # Tags the Docker image with 'latest' version
+        run: docker tag ${{ env.IMAGE_NAME }} ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
 
       - name: Push Docker image with latest version
-        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest  # Pushes the 'latest' Docker image to Docker Hub
+        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
 
   # Deploy to VPS Job
   deploy-job:
-    runs-on: ubuntu-latest  # Runs on the latest Ubuntu VM provided by GitHub Actions
-    needs: build-and-push-job  # This job runs after the build-and-push-job completes
+    runs-on: ubuntu-latest
+    needs: build-and-push-job
     steps:
       - name: Connect to the VPS using SSH
-        uses: appleboy/ssh-action@master  # Uses SSH to connect to the VPS
+        uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.VPS_HOST }}  # VPS host from GitHub secrets
-          username: ${{ secrets.VPS_USERNAME }}  # VPS username from GitHub secrets
-          password: ${{ secrets.VPS_PASSWORD }}  # VPS password from GitHub secrets
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          password: ${{ secrets.VPS_PASSWORD }}
           script: |
-            cd /home/ubuntu/devops-scripts/api  # Navigates to the deployment directory
-            sudo git pull  # Pulls the latest code from the repository
-            sudo docker compose pull  # Pulls the latest Docker images
-            sudo docker compose up -d --force-recreate --remove-orphans  # Recreates and restarts containers
-            sudo docker image prune -af  # Removes unused Docker images
+            cd /home/ubuntu/devops-scripts/api
+            sudo git pull
+            sudo docker compose pull
+            sudo docker compose up -d --force-recreate --remove-orphans
+            sudo docker image prune -af
 
-  # Health Check Job - Performs a post-deployment check to ensure the backend API is live and responsive.
-  # Also sends a notification to Slack based on the result (success or failure).
+  # Health Check Job
   health-check-job:
-    runs-on: ubuntu-latest  # Runs on the latest Ubuntu VM provided by GitHub Actions
-    needs: deploy-job  # This job runs after the deploy-job completes
+    runs-on: ubuntu-latest
+    needs: deploy-job
     steps:
       - name: Health Check - Verify Backend Availability
         run: |
-          response=$(curl -s -o /dev/null -w "%{http_code}" ${{ env.BACKEND_URL }}/health)  # Sends a request to the health check endpoint
-          echo "Received response code: $response"  # Logs the response code
-          if [ "$response" -ne 200 ]; then  # If the response is not 200, fail the health check
+          response=$(curl -s -o /dev/null -w "%{http_code}" ${{ env.BACKEND_URL }}/health)
+          echo "Received response code: $response"
+          if [ "$response" -ne 200 ]; then
             echo "Health check failed with response code $response"
-            exit 1  # Fails the job
+            exit 1
           else
-            echo "Health check passed successfully!"  # Passes the job if the response is 200
+            echo "Health check passed successfully!"
           fi
 
       - name: Notify Slack on Success
-        if: success()  # Sends a success notification to Slack if the job is successful
+        if: success()
         uses: slackapi/slack-github-action@v1.23.0
         with:
           payload: |
@@ -167,10 +188,10 @@ jobs:
               "text": "✅ *Pipeline CI/CD Backend-api terminé avec succès !*\n🔁 Branche: `${{ github.ref_name }}`\n🏗 Build: `${{ env.BUILD_NUMBER }}`\n🔗 [Voir le workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
             }
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}  # Slack webhook URL from GitHub secrets
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
 
       - name: Notify Slack on Failure
-        if: failure()  # Sends a failure notification to Slack if the job fails
+        if: failure()
         uses: slackapi/slack-github-action@v1.23.0
         with:
           payload: |
@@ -178,4 +199,4 @@ jobs:
               "text": "❌ *Échec du pipeline CI/CD Backend-api* ❗️\n🔁 Branche: `${{ github.ref_name }}`\n🔗 [Voir les logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
             }
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}  # Slack webhook URL from GitHub secrets
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
