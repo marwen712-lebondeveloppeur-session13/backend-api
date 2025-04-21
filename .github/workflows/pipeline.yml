@@ -156,9 +156,7 @@ jobs:
           playbook: ansible-demo/playbook.yml
           args: >
               -i "${{ secrets.VPS_HOST }},"  # Trailing comma is mandatory!
-              --extra-vars "ansible_user=${{ secrets.VPS_USERNAME }} ansible_ssh_pass=${{ secrets.VPS_PASSWORD }} ansible_port=22 ansible_connection=ssh"
-        env:
-          ANSIBLE_HOST_KEY_CHECKING: 'false'
+              --extra-vars "ansible_user=${{ secrets.VPS_USERNAME }} ansible_password=${{ secrets.VPS_PASSWORD }} ansible_become=yes"
 
  
 
