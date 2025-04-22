@@ -129,47 +129,10 @@ jobs:
       - name: Push Docker image 
         run: docker push ${{ env.IMAGE_NAME }}
 
-  # ✅ Provision VPS
-  provision-vps-job:
-    runs-on: ubuntu-latest
-    needs: build-and-push-job
-
-    steps:
-
-      - name: Test access to private repository using GH_TOKEN
-        run: |
-          echo "Testing access to DevOps-Lebondeveloppeur/devops-scripts..."
-          curl -i -H "Authorization: token ${{ secrets.GH_PAT }}" https://api.github.com/repos/DevOps-Lebondeveloppeur/devops-scripts
-
-      - name: Checkout the playbook and inventory from the private repo
-        uses: actions/checkout@v4
-        with:
-          repository: DevOps-Lebondeveloppeur/devops-scripts
-          token: ${{ secrets.GH_PAT }}
-          path: devops-scripts
-          ref: main
-
-      - name: Install SSH Client (optional but helps with debugging)
-        run: sudo apt-get update && sudo apt-get install -y openssh-client
-
-      - name: Display Ansible version (debugging)
-        run: ansible --version
-
-      - name: Provision VPS using Ansible with inline inventory
-        uses: dawidd6/action-ansible-playbook@v2
-        with:
-          playbook: devops-scripts/provision/playbook.yml
-          inventory: "${{ secrets.VPS_HOST }}"
-          options: >
-            --extra-vars "ansible_user=${{ secrets.VPS_USERNAME }} ansible_password=${{ secrets.VPS_PASSWORD }} ansible_become=yes"
-        env:
-          ANSIBLE_HOST_KEY_CHECKING: 'false'
- 
-
   # ✅ Deploy to VPS
   deploy-job:
     runs-on: ubuntu-latest
-    needs: provision-vps-job  
+    needs: build-and-push-job  
     steps:
       - name: Connect to the VPS using SSH
         uses: appleboy/ssh-action@master

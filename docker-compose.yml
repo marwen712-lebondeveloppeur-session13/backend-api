@@ -7,7 +7,7 @@ services:
     build: .  # Build the image from the current directory
     container_name: backend-api  # Name of the container
     environment:
-      - MONGO_URI=mongodb://root:pass-123@mongodb:27017/book-store?authSource=admin  # MongoDB connection URI
+      - MONGO_URI=mongodb://root:pass-123@mongodb:27017/book-store?authSource=admin  # MongoDB connection URI.
       - PORT=3001  # Port to run the backend API
     ports:
       - '3001:3001'  # Map the container's port 3001 to the host machine's port 3001
