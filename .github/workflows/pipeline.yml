@@ -3,14 +3,14 @@ name: Pipeline CI/CD Backend-api
 
 # ✅ Trigger this workflow on push to main branch
 on:
-  push:
+  push: 
     branches:
       - main
 
 # ✅ Global Environment Variables
 env:
   BUILD_NUMBER: ${{ github.run_number }}  # Unique build number for the pipeline run
-  IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/backend-api:${{ github.sha }}
+  IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/backend-api:${{ github.run_number }}
   BACKEND_URL: "https://api.lebondeveloppeur.net"  # Health check endpoint of the backend API
   HEALTH_PATH: "/health"
   PORT: 3001  # Define a configurable port
