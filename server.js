@@ -39,9 +39,8 @@ app.get("/", (req, res) => {
   res.send("Server is running!");
 });
 
-// Routes
 app.get("/hello", (req, res) => {
-  res.send("Hello Community !");
+  res.send("Hello Le bon developpeur Community !");
 });
 
 app.get("/health", async (req, res) => {
