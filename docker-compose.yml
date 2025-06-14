@@ -2,7 +2,7 @@
 name: backend-api-stack
 
 services:
-  # Backend API service configuration..
+  # Backend API service configuration...
   backend-api:
     build: .  # Build the image from the current directory
     container_name: backend-api  # Name of the container
@@ -26,9 +26,9 @@ services:
       - MONGO_INITDB_ROOT_PASSWORD=pass-123  # Root password for MongoDB
       - MONGO_INITDB_DATABASE=book-store  # Initial database to create
     ports:
-      - "27017:27017"  # Map the container's MongoDB port to the host's port 27017
+      - "27018:27017"  # Map the container's MongoDB port to the host's port 27017
     volumes:
-      - mongodb-volume:/data/db  # Persist MongoDB data using a Docker volume
+      - mongodb-volume-test:/data/db  # Persist MongoDB data using a Docker volume
     networks:
       - backend-api-network  # Connect the service to the defined network
 
@@ -37,6 +37,10 @@ networks:
   backend-api-network:
     driver: bridge  # Use the default bridge driver for the network
 
+  backend-api-network-test:
+    driver: bridge  # Use the default bridge driver for the network
+
 # Define named volume to persist MongoDB data
 volumes:
   mongodb-volume:
+  mongodb-volume-test:
