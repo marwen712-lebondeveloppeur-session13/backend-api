@@ -143,26 +143,26 @@ jobs:
           script: |
 
               # Create Docker network if it doesn't exist
-              docker network inspect backend-api-net || docker network create backend-api-net
-              
+              sudo docker network inspect backend-api-net || sudo docker network create backend-api-net
+
               # Backup current image if running
-              if docker ps -a --format '{{.Names}}' | grep -q 'backend-api'; then
-                current_image=$(docker inspect backend-api --format='{{.Config.Image}}')
+              if sudo docker ps -a --format '{{.Names}}' | grep -q 'backend-api'; then
+                current_image=$(sudo docker inspect backend-api --format='{{.Config.Image}}')
                 echo "Tagging current image ($current_image) as backup"
-                docker tag $current_image backend-api:backup
+                sudo docker tag $current_image backend-api:backup
               fi
 
               # Pull the latest Docker image
-              docker pull ${{ env.IMAGE_NAME }}
-              
+              sudo docker pull ${{ env.IMAGE_NAME }}
+
               # Remove the old container if it exists
-              docker ps -q --filter name=backend-api | grep -q . && docker rm -f backend-api || echo "No existing container to remove"
+              sudo docker ps -q --filter name=backend-api | grep -q . && sudo docker rm -f backend-api || echo "No existing container to remove"
 
               # Run the new container with environment variables
-              docker run -d --name backend-api --network backend-api-net -p ${{ env.PORT }}:${{ env.PORT }} -e NODE_ENV=production -e MONGO_URI=${{ secrets.MONGO_URI }} --restart always ${{ env.IMAGE_NAME }}
-              
+              sudo docker run -d --name backend-api --network backend-api-net -p ${{ env.PORT }}:${{ env.PORT }} -e NODE_ENV=production -e MONGO_URI=${{ secrets.MONGO_URI }} --restart always ${{ env.IMAGE_NAME }}
+
               # Shows running containers
-              docker ps
+              sudo docker ps
 
               # Clean up unused images
               sudo docker image prune -f
@@ -221,12 +221,12 @@ jobs:
             echo "⚠️ Health check failed. Starting rollback..."
 
             # Remove broken container
-            docker rm -f backend-api || true
+            sudo docker rm -f backend-api || true
 
             # Start container using backup image
-            docker run -d --name backend-api --network backend-api-net -p ${{ env.PORT }}:${{ env.PORT }} -e NODE_ENV=production -e MONGO_URI=${{ secrets.MONGO_URI }} --restart always backend-api:backup
+            sudo docker run -d --name backend-api --network backend-api-net -p ${{ env.PORT }}:${{ env.PORT }} -e NODE_ENV=production -e MONGO_URI=${{ secrets.MONGO_URI }} --restart always backend-api:backup
 
-            docker ps
+            sudo docker ps
 
       - name: Notify Slack on Rollback
         uses: slackapi/slack-github-action@v1.23.0
