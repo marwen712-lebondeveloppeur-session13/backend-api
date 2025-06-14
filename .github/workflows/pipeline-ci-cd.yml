@@ -164,7 +164,7 @@ jobs:
               # Shows running containers
               sudo docker ps
 
-              # Clean up unused images
+              # Clean up unused images.
               #sudo docker image prune -f
 
   # ✅ 8. Health Check & Slack Notification
