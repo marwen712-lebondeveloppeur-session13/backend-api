@@ -217,7 +217,7 @@ jobs:
     needs: health-check-job
     if: failure()
     steps:
-      - name: Rollback to Backup Image on VPS
+      - name: Rollback to Backup Image on VPS.
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.VPS_HOST }}
