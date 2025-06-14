@@ -224,7 +224,7 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           password: ${{ secrets.VPS_PASSWORD }}
           script: |
-            echo "⚠️ Health check failed. Starting rollback.."
+            echo "⚠️ Health check failed. Starting rollback."
 
             # Remove broken container
             sudo docker rm -f backend-api || true
