@@ -13,7 +13,7 @@ env:
   IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/backend-api:${{ github.run_number }}
   BACKEND_URL: "https://api.lebondeveloppeur.net"  # Health check endpoint of the backend API
   HEALTH_PATH: "/health"
-  PORT: 3001  # Define a configurable port
+  PORT: 3001  # Define a configurable port.
   
 jobs:
   # ✅ Run Unit Tests
@@ -224,7 +224,7 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           password: ${{ secrets.VPS_PASSWORD }}
           script: |
-            echo "⚠️ Health check failed. Starting rollback..."
+            echo "⚠️ Health check failed. Starting rollback.."
 
             # Remove broken container
             sudo docker rm -f backend-api || true
