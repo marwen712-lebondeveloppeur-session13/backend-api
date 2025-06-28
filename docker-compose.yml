@@ -37,9 +37,6 @@ networks:
   backend-api-network:
     driver: bridge  # Use the default bridge driver for the network
 
-  backend-api-network-test:
-    driver: bridge  # Use the default bridge driver for the network
-
 # Define named volume to persist MongoDB data
 volumes:
   mongodb-volume:
