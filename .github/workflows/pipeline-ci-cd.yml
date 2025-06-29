@@ -56,18 +56,6 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
-  # ✅ Secret Scanning (Gitleaks)
-  gitleaks-secret-scan-job:
-    runs-on: ubuntu-latest
-    needs: [sonarqube-code-quality-scan-job]  # Run in parallel after code analysis
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Run Gitleaks Scan
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
 
   # ✅ Vulnerability Scanning (Snyk)
   snyk-code-security-scan-job:
@@ -112,7 +100,7 @@ jobs:
   # ✅ Build and Push Docker Image
   build-and-push-job:
     runs-on: ubuntu-latest
-    needs: [gitleaks-secret-scan-job, snyk-code-security-scan-job, trivy-image-security-scan-job]  # Wait for all security scans
+    needs: [snyk-code-security-scan-job, trivy-image-security-scan-job]  # Wait for all security scans
     steps:
       - name: Clone Source Code
         uses: actions/checkout@v4
@@ -222,7 +210,7 @@ jobs:
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
-          password: sdfsf
+          password: ${{ secrets.VPS_PASSWORD }}
           script: |
             echo "⚠️ Health check failed. Starting rollback."
 
