@@ -1,43 +1,41 @@
-# Define the name for the stack
-name: backend-api-stack
-
 services:
-  # Backend API service configuration...
-  backend-api:
-    build: .  # Build the image from the current directory
-    container_name: backend-api  # Name of the container
+  mongo:
+    image: mongo
     environment:
-      - MONGO_URI=mongodb://root:pass-123@mongodb:27017/book-store?authSource=admin  # MongoDB connection URI.
-      - PORT=3001  # Port to run the backend API
-    ports:
-      - '3001:3001'  # Map the container's port 3001 to the host machine's port 3001
-    depends_on:
-      - mongodb  # Ensure MongoDB starts before the backend API
-    networks:
-      - backend-api-network  # Connect the service to the defined network
-
-  # MongoDB service configuration
-  mongodb:
-    container_name: mongodb  # Name of the container
-    image: mongo:latest  # Use the latest MongoDB image from Docker Hub
-    restart: always  # Automatically restart MongoDB container if it stops
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME=root  # Root username for MongoDB
-      - MONGO_INITDB_ROOT_PASSWORD=pass-123  # Root password for MongoDB
-      - MONGO_INITDB_DATABASE=book-store  # Initial database to create
-    ports:
-      - "27018:27017"  # Map the container's MongoDB port to the host's port 27017
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
     volumes:
-      - mongodb-volume-test:/data/db  # Persist MongoDB data using a Docker volume
+      - /data/db
+      - ./routes:/app/app
     networks:
-      - backend-api-network  # Connect the service to the defined network
+      - mongo-express-network
+      - api-network
 
-# Define custom network for the services to communicate with each other
-networks:
-  backend-api-network:
-    driver: bridge  # Use the default bridge driver for the network
+  mongo-express:
+    image: mongo-express
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_URL: mongodb://root:example@mongo:27017/
+      ME_CONFIG_BASICAUTH_ENABLED: false
+      ME_CONFIG_BASICAUTH_USERNAME: mongoexpressuser
+      ME_CONFIG_BASICAUTH_PASSWORD: mongoexpresspass
+    networks:
+      - mongo-express-network
 
-# Define named volume to persist MongoDB data
+  api:
+    image: marwenaddinn/api-session13
+    ports:
+      - 3000:3001
+    env_file:
+      - .env
+    networks:
+    - api-network
+
 volumes:
-  mongodb-volume:
-  mongodb-volume-test:
+  mongo-volume:
+
+
+networks:
+  mongo-express-network:
+  api-network:
