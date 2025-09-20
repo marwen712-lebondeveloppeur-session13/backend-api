@@ -31,6 +31,7 @@ jobs:
     # login to dockerhub
     # push docker image
   build-docker-image-and-push:
+    needs: run-unit-test-job
     runs-on: ubuntu-latest
     steps:
         - name: clone source code to runner
