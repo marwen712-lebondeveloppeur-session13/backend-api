@@ -98,11 +98,13 @@ jobs:
           password: ${{ secrets.VPS_PASSWORD }}
           script: |
             # Aller dans le dossier où est ton projet Docker Compose
+
             cd /home/user/devops-script/backend-api/dev
 
             # Tirer la dernière image depuis DockerHub
-            sudo docker compose pull ${{ env.DOCKER_IMAGE }}
+
+            sudo docker compose pull api
 
             # Redémarrer le container avec la nouvelle image
-            # ⚠️ Correction : --remove-orphans (il y avait deux tirets)
+
             sudo docker compose up -d --force-recreate --remove-orphans api
