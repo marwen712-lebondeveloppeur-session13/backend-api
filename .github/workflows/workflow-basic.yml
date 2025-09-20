@@ -14,9 +14,9 @@ jobs:
     # run unit test
   run-unit-test-job:
     runs-on: ubuntu-latest
-  steps:
-    - name: checkout code
-      uses: actions/checkout@v5
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v5
 
   # 2-build docker image and push
     # checkout code 
