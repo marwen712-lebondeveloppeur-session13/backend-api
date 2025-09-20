@@ -15,7 +15,7 @@ jobs:
   run-unit-test-job:
     runs-on: ubuntu-latest
     steps:
-      - name: checkout code
+      - name: clone source code to runner
         uses: actions/checkout@v5
 
   # 2-build docker image and push
