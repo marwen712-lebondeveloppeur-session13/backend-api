@@ -39,7 +39,7 @@ jobs:
 
         - name: build docker image
           run: |
-              docker build -t marwenaddinn/api-session13
+              docker build -t marwenaddinn/api-session13 .
               docker images
         #- name: tag docker image
 
