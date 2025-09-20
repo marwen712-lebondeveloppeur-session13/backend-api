@@ -30,6 +30,11 @@ jobs:
     # tag docker image with version
     # login to dockerhub
     # push docker image
+  build-docker-image-and-push:
+    runs-on: ubuntu-latest
+    steps:
+        - name: clone source code to runner
+          uses: actions/checkout@v5
 
   # 3-deploy to vps
     # ssh connecct to vps
