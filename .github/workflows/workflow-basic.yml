@@ -38,9 +38,9 @@ jobs:
           uses: actions/checkout@v5
 
         - name: build docker image
-          run: docker build -t marwenaddinn/api-session13
-          
-          run: docker images
+          run: |
+              docker build -t marwenaddinn/api-session13
+              docker images
         #- name: tag docker image
 
 
