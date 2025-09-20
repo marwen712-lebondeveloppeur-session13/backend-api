@@ -57,7 +57,7 @@ jobs:
             username: ${{ vars.DOCKERHUB_USERNAME }}
             password: ${{ secrets.DOCKERHUB_TOKEN }}
         - name: push image to dockerhub
-          run: docker push marwenaddinn/api-session13:v2
+          run: docker push marwenaddinn/api-session13:v${{ github.run_number }}
 
         - name: push latest image to dockerhub
           run: docker push marwenaddinn/api-session13:latest
