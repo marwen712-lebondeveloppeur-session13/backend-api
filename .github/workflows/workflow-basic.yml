@@ -11,64 +11,64 @@ env:
 
 jobs:
   # 1-unit test
-    # checkout code
-    # run unit test
-  # run-unit-test-job:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: clone source code to runner 
-  #       uses: actions/checkout@v5
+  #   checkout code
+  #   run unit test
+  run-unit-test-job:
+    runs-on: ubuntu-latest
+    steps:
+      - name: clone source code to runner 
+        uses: actions/checkout@v5
 
-  #     - name: install dependecies
-  #       run:  npm i
+      - name: install dependecies
+        run:  npm i
 
-  #     - name: run unit test
-  #       run: npm run test
+      - name: run unit test
+        run: npm run test
 
-  # # 2-build docker image and push
-  #   # checkout code 
-  #   # build docker image
-  #   # tag docker image with version
-  #   # login to dockerhub
-  #   # push docker image
-  # build-docker-image-and-push:
-  #   needs: run-unit-test-job
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #       - name: clone source code to runner
-  #         uses: actions/checkout@v5
+  # 2-build docker image and push
+    # checkout code 
+    # build docker image
+    # tag docker image with version
+    # login to dockerhub
+    # push docker image
+  build-docker-image-and-push:
+    needs: run-unit-test-job
+    runs-on: ubuntu-latest
+    steps:
+        - name: clone source code to runner
+          uses: actions/checkout@v5
 
-  #       - name: build docker image
-  #         run: docker build -t ${{ env.DOCKER_IMAGE}} .
+        - name: build docker image
+          run: docker build -t ${{ env.DOCKER_IMAGE}} .
 
-  #       - name: tag docker image
-  #         run: docker tag ${{ env.DOCKER_IMAGE}} ${{ env.DOCKER_IMAGE}}:v${{ github.run_number }}
+        - name: tag docker image
+          run: docker tag ${{ env.DOCKER_IMAGE}} ${{ env.DOCKER_IMAGE}}:v${{ github.run_number }}
 
-  #       - name: show docker images
-  #         run: docker images
+        - name: show docker images
+          run: docker images
 
-  #       - name: show docker username and acces-token
-  #         run: |
-  #           echo ${{ vars.DOCKERHUB_USERNAME }}
-  #           echo ${{ secrets.DOCKERHUB_TOKEN }}
+        - name: show docker username and acces-token
+          run: |
+            echo ${{ vars.DOCKERHUB_USERNAME }}
+            echo ${{ secrets.DOCKERHUB_TOKEN }}
 
-  #       - name: Login to Docker Hub
-  #         uses: docker/login-action@v3
-  #         with:
-  #           username: ${{ vars.DOCKERHUB_USERNAME }}
-  #           password: ${{ secrets.DOCKERHUB_TOKEN }}
-  #       - name: push image to dockerhub
-  #         run: docker push ${{ env.DOCKER_IMAGE}}:v${{ github.run_number }}
+        - name: Login to Docker Hub
+          uses: docker/login-action@v3
+          with:
+            username: ${{ vars.DOCKERHUB_USERNAME }}
+            password: ${{ secrets.DOCKERHUB_TOKEN }}
+        - name: push image to dockerhub
+          run: docker push ${{ env.DOCKER_IMAGE}}:v${{ github.run_number }}
 
-  #       - name: push latest image to dockerhub
-  #         run: docker push ${{ env.DOCKER_IMAGE}}:latest
+        - name: push latest image to dockerhub
+          run: docker push ${{ env.DOCKER_IMAGE}}:latest
   # 3-deploy to vps
-    # ssh connecct to vps
-    # pull docker image
-    # run docker container
+  #   ssh connecct to vps
+  #   pull docker image
+  #   run docker container
     deploy-to-vps:
       runs-on: ubuntu-latest
-      # needs: build-docker-image-and-push
+      needs: build-docker-image-and-push
       steps:
         - name: Execute remote SSH commands using password
           uses: appleboy/ssh-action@v1
@@ -76,4 +76,7 @@ jobs:
             host: ${{ secrets.VPS_HOST }}
             username: user
             password: ${{ secrets.VPS_PASSWORD }}
-            script: whoami
+            script: |
+              cd /home/user/devops-script/backend-api/dev
+              sudo docker compose pull ${{ DOCKER_IMAGE }}
+              sudo docker compose up -d --force-recreate --remove--orphans api
