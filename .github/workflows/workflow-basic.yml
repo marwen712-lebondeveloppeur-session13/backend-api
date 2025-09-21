@@ -34,6 +34,23 @@ jobs:
       # Étape 3 : Lancer les tests unitaires définis dans package.json
       - name: run unit test
         run: npm run test
+  # ========================================================
+  #  JOB : Exécuter les tests avec SONARQUBE
+  # ========================================================        
+  sonarqube-code-quality-scan-job:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone Source Code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: SonarQube Scan
+        uses: sonarsource/sonarqube-scan-action@master
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          # SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
   # ========================================================
   # 2 - JOB : Construire et pousser l’image Docker
