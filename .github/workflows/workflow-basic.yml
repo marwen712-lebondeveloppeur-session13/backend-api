@@ -38,6 +38,7 @@ jobs:
   #  JOB : Exécuter les tests avec SONARQUBE
   # ========================================================        
   sonarqube-code-quality-scan-job:
+    needs: run-unit-test-job
     runs-on: ubuntu-latest
     steps:
       - name: Clone Source Code
@@ -57,7 +58,7 @@ jobs:
   # (ne s’exécute que si les tests unitaires passent)
   # ========================================================
   build-docker-image-and-push:
-    needs: run-unit-test-job  # Dépend du job précédent
+    needs: sonarqube-code-quality-scan-job  # Dépend du job précédent
     runs-on: ubuntu-latest
     steps:
         # Étape 1 : Récupérer le code source
