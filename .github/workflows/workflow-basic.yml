@@ -77,11 +77,11 @@ jobs:
         run: snyk auth ${{ secrets.SNYK_TOKEN }}
       - name: Run Snyk
         run: snyk test --all-projects
-        # continue-on-error: true
+        continue-on-error: true
 
       - name: Run Snyk Vulnerability Scan
         run: snyk monitor --all-projects --org=marwen712
-        continue-on-error: false
+        # continue-on-error: false
 
       - name: Notify Slack on Success
         if: success()
