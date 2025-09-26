@@ -54,11 +54,38 @@ jobs:
           # SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
   # ========================================================
+  #  JOB : Exécuter les tests avec Snyk
+  # ======================================================== 
+
+  snyk-code-security-scan-job:
+    runs-on: ubuntu-latest
+    needs: run-unit-test-job
+    steps:
+
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js (if applicable)
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install Dependency Scanning Tool (Snyk)
+        run: npm install -g snyk
+
+      - name: Snyk Authentication
+        run: snyk auth ${{ secrets.SNYK_TOKEN }}
+
+      - name: Run Snyk Vulnerability Scan
+        run: snyk monitor --all-projects --org=marwen712
+
+
+  # ========================================================
   # 2 - JOB : Construire et pousser l’image Docker
   # (ne s’exécute que si les tests unitaires passent)
   # ========================================================
   build-docker-image-and-push:
-    needs: sonarqube-code-quality-scan-job  # Dépend du job précédent
+    needs: [sonarqube-code-quality-scan-job, run-unit-test-job]  # Dépend du job précédent
     runs-on: ubuntu-latest
     steps:
         # Étape 1 : Récupérer le code source
