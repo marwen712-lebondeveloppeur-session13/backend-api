@@ -85,7 +85,7 @@ jobs:
   # (ne s’exécute que si les tests unitaires passent)
   # ========================================================
   build-docker-image-and-push:
-    needs: [sonarqube-code-quality-scan-job, run-unit-test-job]  # Dépend du job précédent
+    needs: [sonarqube-code-quality-scan-job, snyk-code-security-scan-job]  # Dépend du job précédent
     runs-on: ubuntu-latest
     steps:
         # Étape 1 : Récupérer le code source
