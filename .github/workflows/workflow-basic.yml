@@ -57,11 +57,57 @@ jobs:
   #  JOB : Exécuter les tests avec Snyk
   # ======================================================== 
 
+  # snyk-code-security-scan-job:
+  #   runs-on: ubuntu-latest
+  #   needs: run-unit-test-job
+  #   steps:
+
+  #     - name: Checkout Code
+  #       uses: actions/checkout@v4
+
+  #     - name: Set up Node.js (if applicable)
+  #       uses: actions/setup-node@v3
+  #       with:
+  #         node-version: '18'
+
+  #     - name: Install Dependency Scanning Tool (Snyk)
+  #       run: npm install -g snyk
+
+  #     - name: Snyk Authentication
+  #       run: snyk auth ${{ secrets.SNYK_TOKEN }}
+  #     - name: Run Snyk
+  #       run: snyk test --all-projects
+  #       continue-on-error: true
+
+  #     - name: Run Snyk Vulnerability Scan
+  #       run: snyk monitor --all-projects --org=marwen712
+  #       # continue-on-error: false
+
+  #     - name: Notify Slack on Success
+  #       if: success()
+  #       uses: slackapi/slack-github-action@v1.23.0
+  #       with:
+  #         payload: |
+  #           {
+  #             "text": "✅ Snyk job success !*\n🔁 Branche: `${{ github.ref_name }}`\n🏗 Build: `${{ env.BUILD_NUMBER }}`\n🔗 [Voir le workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+  #           }
+  #       env:
+  #         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+
+  #     - name: Notify Slack on Failure
+  #       if: failure()
+  #       uses: slackapi/slack-github-action@v1.23.0
+  #       with:
+  #         payload: |
+  #           {
+  #             "text": "❌ Snyk job failed ❗️\n🔁 Branche: `${{ github.ref_name }}`\n🔗 [Voir les logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+  #           }
+  #       env:
+  #         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
   snyk-code-security-scan-job:
     runs-on: ubuntu-latest
     needs: run-unit-test-job
     steps:
-
       - name: Checkout Code
         uses: actions/checkout@v4
 
@@ -70,40 +116,62 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Install Dependency Scanning Tool (Snyk)
+      - name: Install Snyk CLI
         run: npm install -g snyk
 
-      - name: Snyk Authentication
+      - name: Authenticate Snyk
         run: snyk auth ${{ secrets.SNYK_TOKEN }}
-      - name: Run Snyk
-        run: snyk test --all-projects
-        continue-on-error: true
 
-      - name: Run Snyk Vulnerability Scan
-        run: snyk monitor --all-projects --org=marwen712
-        # continue-on-error: false
+      # -------------------------
+      # Run Snyk Test (fail job if issues found)
+      # -------------------------
+      - name: Run Snyk Test
+        id: snyk_test
+        run: |
+          snyk test --all-projects --org=marwen712
 
+      # -------------------------
+      # Run Snyk Monitor (always runs if test succeeded)
+      # Extract report URL and save it as output
+      # -------------------------
+      - name: Run Snyk Monitor
+        id: snyk_monitor
+        run: |
+          OUTPUT=$(snyk monitor --all-projects --org=marwen712)
+          echo "$OUTPUT"
+          # Extract the URL (last line usually contains it)
+          URL=$(echo "$OUTPUT" | grep -Eo 'https://app.snyk.io[^ ]+' | tail -n1)
+          echo "Monitor URL: $URL"
+          echo "url=$URL" >> $GITHUB_OUTPUT
+
+      # -------------------------
+      # Notify Slack on Success
+      # -------------------------
       - name: Notify Slack on Success
         if: success()
         uses: slackapi/slack-github-action@v1.23.0
         with:
           payload: |
             {
-              "text": "✅ Snyk job success !*\n🔁 Branche: `${{ github.ref_name }}`\n🏗 Build: `${{ env.BUILD_NUMBER }}`\n🔗 [Voir le workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+              "text": "✅ *Snyk scan passed!*\n🔁 Branch: `${{ github.ref_name }}`\n🔗 Report: ${{ steps.snyk_monitor.outputs.url }}\n🔗 [Workflow Logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
 
+      # -------------------------
+      # Notify Slack on Failure
+      # -------------------------
       - name: Notify Slack on Failure
         if: failure()
         uses: slackapi/slack-github-action@v1.23.0
         with:
           payload: |
             {
-              "text": "❌ Snyk job failed ❗️\n🔁 Branche: `${{ github.ref_name }}`\n🔗 [Voir les logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+              "text": "❌ *Snyk scan failed!*\n🔁 Branch: `${{ github.ref_name }}`\n🔗 [Workflow Logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+
   # ========================================================
   # 2 - JOB : Construire et pousser l’image Docker
   # (ne s’exécute que si les tests unitaires passent)
