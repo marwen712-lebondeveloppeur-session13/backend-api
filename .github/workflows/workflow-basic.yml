@@ -111,7 +111,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Set up Node.js (if applicable)
+      - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
@@ -123,29 +123,27 @@ jobs:
         run: snyk auth ${{ secrets.SNYK_TOKEN }}
 
       # -------------------------
-      # Run Snyk Test (fail job if issues found)
+      # Run Snyk Test (fail if vulnerabilities found)
       # -------------------------
       - name: Run Snyk Test
         id: snyk_test
-        run: |
-          snyk test --all-projects --org=marwen712
+        run: snyk test --all-projects --org=marwen712
 
       # -------------------------
-      # Run Snyk Monitor (always runs if test succeeded)
-      # Extract report URL and save it as output
+      # Run Snyk Monitor and extract URL
       # -------------------------
       - name: Run Snyk Monitor
         id: snyk_monitor
         run: |
           OUTPUT=$(snyk monitor --all-projects --org=marwen712)
           echo "$OUTPUT"
-          # Extract the URL (last line usually contains it)
+          # extract snyk monitor URL
           URL=$(echo "$OUTPUT" | grep -Eo 'https://app.snyk.io[^ ]+' | tail -n1)
-          echo "Monitor URL: $URL"
+          echo "SNYK_URL=$URL" >> $GITHUB_ENV
           echo "url=$URL" >> $GITHUB_OUTPUT
 
       # -------------------------
-      # Notify Slack on Success
+      # Slack success notification
       # -------------------------
       - name: Notify Slack on Success
         if: success()
@@ -153,10 +151,25 @@ jobs:
         with:
           payload: |
             {
-              "text": "✅ *Snyk scan passed!*\n🔁 Branch: `${{ github.ref_name }}`\n🔗 Report: ${{ steps.snyk_monitor.outputs.url }}\n🔗 [Workflow Logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+              "text": "✅ *Snyk scan passed!*\n🔁 Branch: `${{ github.ref_name }}`\n🔗 [View Snyk Report](${{ steps.snyk_monitor.outputs.url }})"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+
+      # -------------------------
+      # Slack failure notification
+      # -------------------------
+      - name: Notify Slack on Failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1.23.0
+        with:
+          payload: |
+            {
+              "text": "❌ *Snyk scan failed!*\n🔁 Branch: `${{ github.ref_name }}`\n⚠️ Vulnerabilities detected.\n"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+
 
       # -------------------------
       # Notify Slack on Failure
