@@ -123,24 +123,32 @@ jobs:
         run: snyk auth ${{ secrets.SNYK_TOKEN }}
 
       # -------------------------
-      # Run Snyk Test (fail if vulnerabilities found)
+      # Run Snyk Test (don’t stop pipeline yet)
       # -------------------------
       - name: Run Snyk Test
         id: snyk_test
         run: snyk test --all-projects --org=marwen712
+        continue-on-error: true   # allow monitor to run
 
       # -------------------------
-      # Run Snyk Monitor and extract URL
+      # Run Snyk Monitor (always runs)
       # -------------------------
       - name: Run Snyk Monitor
         id: snyk_monitor
         run: |
           OUTPUT=$(snyk monitor --all-projects --org=marwen712)
           echo "$OUTPUT"
-          # extract snyk monitor URL
           URL=$(echo "$OUTPUT" | grep -Eo 'https://app.snyk.io[^ ]+' | tail -n1)
-          echo "SNYK_URL=$URL" >> $GITHUB_ENV
           echo "url=$URL" >> $GITHUB_OUTPUT
+
+      # -------------------------
+      # Fail job explicitly if snyk test failed
+      # -------------------------
+      - name: Fail if vulnerabilities found
+        if: steps.snyk_test.outcome == 'failure'
+        run: |
+          echo "❌ Vulnerabilities found"
+          exit 1
 
       # -------------------------
       # Slack success notification
@@ -157,7 +165,7 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
 
       # -------------------------
-      # Slack failure notification
+      # Slack failure notification (includes monitor URL now)
       # -------------------------
       - name: Notify Slack on Failure
         if: failure()
@@ -165,7 +173,7 @@ jobs:
         with:
           payload: |
             {
-              "text": "❌ *Snyk scan failed!*\n🔁 Branch: `${{ github.ref_name }}`\n⚠️ Vulnerabilities detected.\n"
+              "text": "❌ *Snyk scan failed!*\n🔁 Branch: `${{ github.ref_name }}`\n🔗 [View Snyk Issues](${{ steps.snyk_monitor.outputs.url }})"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
