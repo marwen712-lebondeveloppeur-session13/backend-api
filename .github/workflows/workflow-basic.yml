@@ -222,7 +222,7 @@ jobs:
     needs: [sonarqube-code-quality-scan-job, snyk-code-security-scan-job, trivy-image-security-scan-job]  # Dépend du job précédent
     runs-on: ubuntu-latest 
     steps:
-        # Étape 1 : Récupérer le code source
+        # Étape 1 : Récupérer le code source 
         - name: clone source code to runner
           uses: actions/checkout@v5
 
