@@ -13,7 +13,7 @@ const PORT = process.env.PORT || 3001;
 app.use(express.json());
 app.use(cors(
   {
-    origin: ["http://localhost:5173", "https://app.11.lebondeveloppeur.net"] 
+    origin: ["http://localhost:3002", "https://app.11.lebondeveloppeur.net"] 
   }
 )); // Enable CORS for all routes
 
