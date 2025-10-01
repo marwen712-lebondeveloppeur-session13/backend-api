@@ -155,7 +155,7 @@ jobs:
       # -------------------------
       - name: Notify Slack on Success
         if: success()
-        uses: slackapi/slack-github-action@v1.23.0
+        uses: slackapi/slack-github-action@e8f54f58c10b4b1ce4a4cdc97066c9d238e5a795
         with:
           payload: |
             {
